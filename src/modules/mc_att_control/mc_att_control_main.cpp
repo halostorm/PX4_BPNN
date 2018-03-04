@@ -117,7 +117,7 @@ extern "C" __EXPORT int mc_att_control_main(int argc, char *argv[]);
 
 int train_count = 0; //样本计算次数
 int begin_count = 10000; //初始控制次数
-bool neure_flag_enabled = true; //flag of using NN;由遥控器选择
+bool neure_flag_enabled = false; //flag of using NN;由遥控器选择
 bool unstable_flag_enabled = false; //flag of using NN；误差不稳定则学习，由error_min、error_max决定
 double param[12] = { 0.0 };
 double param1[3] = { 0.0 };
@@ -1436,26 +1436,22 @@ void MulticopterAttitudeControl::task_main() {
 					_rates_sp(2) = _v_rates_sp.yaw;
 					_thrust_sp = _v_rates_sp.thrust;
 				}
-				if (neure_flag_enabled == true) {
-					file_attitude = fopen("/fs/microsd/attitude.txt", "a+");
-					time_t timeSec = time(NULL); //获取1970.1.1至当前秒数time_t
-					struct tm *timeinfo = localtime(&timeSec); //创建TimeData，并转化成当地时间
-					fprintf(file_attitude, "%d-%d-%d  %d:%d:%d\t",
-							timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
-							timeinfo->tm_mday, timeinfo->tm_hour + 8,
-							timeinfo->tm_min, timeinfo->tm_sec);
-					fprintf(file_attitude, "%.4f\t",
-							(double) _v_att_sp.pitch_body);
-					fprintf(file_attitude, "%.4f\t",
-												(double) _v_att_sp.roll_body);
-					fprintf(file_attitude, "%.4f\t",
-												(double) _v_att_sp.yaw_body);
-
-					fprintf(file_attitude, "\n\r");
-					fclose(file_attitude);
-				}
 			}
+			if (neure_flag_enabled == true) {
+				file_attitude = fopen("/fs/microsd/attitude.txt", "a+");
+				time_t timeSec = time(NULL); //获取1970.1.1至当前秒数time_t
+				struct tm *timeinfo = localtime(&timeSec); //创建TimeData，并转化成当地时间
+				fprintf(file_attitude, "%d-%d-%d  %d:%d:%d\t",
+						timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
+						timeinfo->tm_mday, timeinfo->tm_hour + 8,
+						timeinfo->tm_min, timeinfo->tm_sec);
+				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.pitch_body);
+				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.roll_body);
+				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.yaw_body);
 
+				fprintf(file_attitude, "\n\r");
+				fclose(file_attitude);
+			}
 			if (_v_control_mode.flag_control_rates_enabled) {
 
 				control_attitude_rates_1(dt);
