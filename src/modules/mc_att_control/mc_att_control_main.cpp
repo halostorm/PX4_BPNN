@@ -749,9 +749,13 @@ void MulticopterAttitudeControl::vehicle_status_poll() {
 	}
 	if (_vehicle_status.nav_state == 15) {
 		neure_flag_enabled = true;
-	} else if (_vehicle_status.nav_state == 0) {
+	}
+	else{
 		neure_flag_enabled = false;
 	}
+	//else if (_vehicle_status.nav_state == 0) {
+	//	neure_flag_enabled = false;
+	//}
 }
 
 void MulticopterAttitudeControl::vehicle_motor_limits_poll() {
@@ -1298,6 +1302,10 @@ void MulticopterAttitudeControl::task_main() {
 	n_n.w21 = _params.rate_p;
 	n_n.w22 = _params.rate_i;
 	n_n.w23 = _params.rate_d;
+	fd = fopen("/fs/microsd/pidchange.txt", "w+"); //输出pid神经元参数变化；
+	file_attitude = fopen("/fs/microsd/attitude.txt", "w+"); //输出姿态变化
+	fclose(file_attitude);
+	fclose(fd);
 	/* wakeup source: vehicle attitude */
 	px4_pollfd_struct_t fds[1];
 
@@ -1441,14 +1449,17 @@ void MulticopterAttitudeControl::task_main() {
 				file_attitude = fopen("/fs/microsd/attitude.txt", "a+");
 				time_t timeSec = time(NULL); //获取1970.1.1至当前秒数time_t
 				struct tm *timeinfo = localtime(&timeSec); //创建TimeData，并转化成当地时间
+				//fprintf(file_attitude,"%d\t",_vehicle_status.nav_state);
+				//fprintf(file_attitude,"%d\t",neure_flag_enabled);
 				fprintf(file_attitude, "%d-%d-%d  %d:%d:%d\t",
 						timeinfo->tm_year + 1900, timeinfo->tm_mon + 1,
 						timeinfo->tm_mday, timeinfo->tm_hour + 8,
 						timeinfo->tm_min, timeinfo->tm_sec);
-				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.pitch_body);
-				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.roll_body);
-				fprintf(file_attitude, "%.4f\t", (double) _v_att_sp.yaw_body);
-
+				math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
+				math::Vector<3> euler_att = q_att.to_euler();
+				fprintf(file_attitude, "%.4f\t", (double) euler_att(0)*180/M_PI);
+				fprintf(file_attitude, "%.4f\t", (double) euler_att(1)*180/M_PI);
+				fprintf(file_attitude, "%.4f\t", (double) euler_att(2)*180/M_PI);
 				fprintf(file_attitude, "\n\r");
 				fclose(file_attitude);
 			}
